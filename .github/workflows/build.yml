@@ -1,37 +1,63 @@
 ---
 name: build
 on:
-  push: {}
-  # workflow_dispatch:
-  # release:
-  #   types: [published]
+  pull_request:
+  workflow_dispatch:
+
+  release:
+    types: [published]
 
 permissions:
-  contents: read
-  packages: write
+  contents: write # Publish release assets
+  # packages: write
 
 jobs:
-  build_linux:
+  linux_amd64:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        arch: [amd64, arm64]
-    container:
-      image: golang:bookworm
-      options: --platform linux/${{ matrix.arch }}
+    container: golang:bookworm
     steps:
-      - name: build
+      - uses: actions/checkout@v4
+
+      - name: Build Golang
         run: |
           apt-get update
           apt-get install -y build-essential libssl-dev libpcsclite-dev libykpiv-dev
-          mkdir -p bin
-          go build -buildvcs=false -o bin/vault-yubikey-helper-VERSION-linux_${{ matrix.arch }} .
+          go build -v -buildvcs=false -o vault-yubikey-helper .
+      
+      - name: Publish Artifact to Release
+        if: ${{ github.event_name == 'release' }}
+        run: |
+          tar -czvf asset.tar.gz vault-yubikey-helper
 
-  build_macos:
+          asset=vault-yubikey-helper-${{ github.event.release.tag_name }}-linux_amd64.tar.gz
+          echo "Publishing $asset to release ${{ github.event.release.name }} [tag: ${{ github.event.release.tag_name }}]"
+
+          curl -L -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@asset.tar.gz" \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ github.event.release.id }}/assets?name=$asset"
+
+  darwin_amd64:
     runs-on: macos-latest
     steps:
-      - name: build
+      - uses: actions/checkout@v4
+
+      - name: Build Golang
         run: |
           brew install pkg-config yubico-piv-tool
-          mkdir -p bin
-          go build -buildvcs=false -o bin/vault-yubikey-helper-VERSION-darwin_amd64 .
+          go build -v -buildvcs=false -o vault-yubikey-helper .
+
+      - name: Publish Artifact to Release
+        if: ${{ github.event_name == 'release' }}
+        run: |
+          tar -czvf asset.tar.gz vault-yubikey-helper
+
+          asset=vault-yubikey-helper-${{ github.event.release.tag_name }}-darwin_amd64.tar.gz
+          echo "Publishing $asset to release ${{ github.event.release.name }} [tag: ${{ github.event.release.tag_name }}]"
+
+          curl -L -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@asset.tar.gz" \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ github.event.release.id }}/assets?name=$asset"

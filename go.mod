@@ -1,6 +1,6 @@
 module github.com/jmanero/vault-yubikey-helper
 
-go 1.21.0
+go 1.21
 
 require (
 	github.com/hashicorp/vault/api v1.10.0
