@@ -1,0 +1,37 @@
+---
+name: build
+on:
+  push: {}
+  # workflow_dispatch:
+  # release:
+  #   types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build_linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    container:
+      image: golang:bookworm
+      options: --platform linux/${{ matrix.arch }}
+    steps:
+      - name: build
+        run: |
+          apt-get update
+          apt-get install -y build-essential libssl-dev libpcsclite-dev libykpiv-dev
+          mkdir -p bin
+          go build -buildvcs=false -o bin/vault-yubikey-helper-VERSION-linux_${{ matrix.arch }} .
+
+  build_macos:
+    runs-on: macos-latest
+    steps:
+      - name: build
+        run: |
+          brew install pkg-config yubico-piv-tool
+          mkdir -p bin
+          go build -buildvcs=false -o bin/vault-yubikey-helper-VERSION-darwin_amd64 .
