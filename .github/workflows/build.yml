@@ -32,7 +32,7 @@ jobs:
           asset=vault-yubikey-helper-${{ github.event.release.tag_name }}-linux_amd64.tar.gz
           echo "Publishing $asset to release ${{ github.event.release.name }} [tag: ${{ github.event.release.tag_name }}]"
 
-          curl -L -X POST \
+          curl -L -X POST --fail-with-body \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Content-Type: application/octet-stream" \
             --data-binary "@asset.tar.gz" \
@@ -56,7 +56,7 @@ jobs:
           asset=vault-yubikey-helper-${{ github.event.release.tag_name }}-darwin_amd64.tar.gz
           echo "Publishing $asset to release ${{ github.event.release.name }} [tag: ${{ github.event.release.tag_name }}]"
 
-          curl -L -X POST \
+          curl -L -X POST --fail-with-body \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Content-Type: application/octet-stream" \
             --data-binary "@asset.tar.gz" \
