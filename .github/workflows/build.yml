@@ -22,7 +22,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y build-essential libssl-dev libpcsclite-dev libykpiv-dev
-          go build -v -buildvcs=false -o vault-yubikey-helper .
+          go build -v -buildvcs=false -o vault-yubikey-helper ./cmd
       
       - name: Publish Artifact to Release
         if: ${{ github.event_name == 'release' }}
@@ -46,7 +46,7 @@ jobs:
       - name: Build Golang
         run: |
           brew install pkg-config yubico-piv-tool
-          go build -v -buildvcs=false -o vault-yubikey-helper .
+          go build -v -buildvcs=false -o vault-yubikey-helper ./cmd
 
       - name: Publish Artifact to Release
         if: ${{ github.event_name == 'release' }}
