@@ -9,8 +9,7 @@ The intent of this tool is to provide better-than-nothing encrypted storage of t
 
 🟢 Does protect against wandering hard drives WITHOUT Yubikeys. Secrets are encrypted on disk and can not be read by someone who gains access to data on said disk in the future.
 
-❌ Does not protect against wandering hard drives AND Yubikeys. If someone the disk and the corresponding Yubikey, they can likely find the required PIN in the scripts or service configurations that call `vault-yubikey-helper` to unseal the local Vault instance, and use it with the Yubikey to decrypt stored root secrets for the Vault cluster.
-
+❌ Does not protect against wandering hard drives AND Yubikeys. If someone acquires the hard drive and the corresponding Yubikey, they can likely find the Yubikey's PIN in the scripts or service configurations that call `vault-yubikey-helper` to unseal the local Vault instance, and use it with the Yubikey to decrypt stored root secrets for the Vault cluster.
 
 ## Usage
 
