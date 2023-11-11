@@ -2,7 +2,12 @@ package common
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/rsa"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"math/rand"
 	"os"
@@ -24,6 +29,26 @@ var randsrc rand.Source
 
 func init() {
 	randsrc = rand.NewSource(time.Now().Unix())
+}
+
+// FingerprintKey is a helper to generate string identifiers for crypto.PublicKey types
+func FingerprintKey(key crypto.PublicKey) string {
+	hasher := sha256.New()
+
+	switch pub := key.(type) {
+	case *ecdsa.PublicKey:
+		hasher.Write(pub.X.Bytes())
+		hasher.Write(pub.Y.Bytes())
+
+		return fmt.Sprintf("EC:%s<% x>", pub.Params().Name, hasher.Sum(nil))
+	case *rsa.PublicKey:
+		hasher.Write(pub.N.Bytes())
+		hasher.Write([]byte{byte(pub.E >> 24), byte(pub.E >> 16), byte(pub.E >> 8), byte(pub.E)})
+
+		return fmt.Sprintf("RSA:%d<% x>", pub.N.BitLen(), hasher.Sum(nil))
+	default:
+		return fmt.Sprintf("Unsupported Key: %T<%v>", key, key)
+	}
 }
 
 // MarshalJSON is a helper to pretty-print JSON with the default HTML escaping disabled

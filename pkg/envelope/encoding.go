@@ -1,4 +1,4 @@
-package common
+package envelope
 
 import "encoding/base64"
 
