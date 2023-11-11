@@ -29,7 +29,7 @@ jobs:
         run: |
           tar -czvf asset.tar.gz vault-yubikey-helper
 
-          asset=vault-yubikey-helper-${{ github.event.release.tag_name }}-linux_amd64.tar.gz
+          asset=vault-yubikey-helper_${{ github.event.release.tag_name }}_linux_amd64.tar.gz
           echo "Publishing $asset to release ${{ github.event.release.name }} [tag: ${{ github.event.release.tag_name }}]"
 
           curl -L -X POST --fail-with-body \
@@ -53,7 +53,7 @@ jobs:
         run: |
           tar -czvf asset.tar.gz vault-yubikey-helper
 
-          asset=vault-yubikey-helper-${{ github.event.release.tag_name }}-darwin_amd64.tar.gz
+          asset=vault-yubikey-helper_${{ github.event.release.tag_name }}_darwin_amd64.tar.gz
           echo "Publishing $asset to release ${{ github.event.release.name }} [tag: ${{ github.event.release.tag_name }}]"
 
           curl -L -X POST --fail-with-body \
