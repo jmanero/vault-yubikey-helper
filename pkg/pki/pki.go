@@ -11,6 +11,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/jmanero/vault-yubikey-helper/pkg/pki/duration"
 	"pault.ag/go/ykpiv"
 )
 
@@ -34,16 +35,21 @@ func NewSerial() (*big.Int, error) {
 
 // NotBeforeAfter generates a pair of time.Time, for NotBefore and NotAfter
 // certificate values. NotBefore is the current time, rounded to the previous hour
-func NotBeforeAfter(lifetime time.Duration) (time.Time, time.Time) {
-	// Round down to the nearest hour
-	now := time.Now().UTC()
-	rounded := now.Round(time.Hour)
-	if rounded.After(now) {
-		// Don't round up into the future
-		rounded.Add(-time.Hour)
+func NotBeforeAfter(lifetime string) (before time.Time, after time.Time, err error) {
+	dur, err := duration.ParseDuration(lifetime)
+	if err != nil {
+		return
 	}
 
-	return rounded, rounded.Add(lifetime)
+	// Round to the nearest hour
+	now := time.Now().UTC()
+	before = now.Round(time.Hour)
+	if before.After(now) {
+		// Always round down... not up into the future
+		before = before.Add(-time.Hour)
+	}
+
+	return before, before.Add(time.Duration(dur)), nil
 }
 
 // ReadCertificateRequest attempts to parse a PEM encoded CERTIFICATE REQUEST object
