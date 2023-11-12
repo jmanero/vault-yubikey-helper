@@ -3,11 +3,11 @@ package pki
 import (
 	"crypto/rand"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"github.com/jmanero/vault-yubikey-helper/cmd/util"
 	"github.com/jmanero/vault-yubikey-helper/pkg/common"
@@ -20,8 +20,7 @@ import (
 
 // CLI flag values
 var (
-	CSRFile  string
-	Lifespan time.Duration
+	CSRFile string
 )
 
 func init() {
@@ -35,7 +34,6 @@ func init() {
 
 	flags := sign.PersistentFlags()
 	flags.StringVar(&CSRFile, "req-in", "", "Read the signing request from a file instead of STDIN")
-	flags.DurationVar(&Lifespan, "lifespan", time.Hour*24*365, "Lifespan for the signed certificate")
 
 	CLI.AddCommand(&sign)
 }
@@ -59,14 +57,22 @@ func Sign(cmd *cobra.Command, args []string) (err error) {
 		return
 	}
 
+	common.Logger.Info("Loaded request", zap.Stringer("subject", req.Subject))
 	template := x509.Certificate{
-		Subject: req.Subject,
+		// Bypass the limited set of properties parsed in pkix.Name and x509.CertificateRequest structs
+		Subject: pkix.Name{
+			ExtraNames: req.Subject.Names,
+		},
+		ExtraExtensions: req.Extensions,
 
-		ExtraExtensions:       req.Extensions,
 		BasicConstraintsValid: true,
 	}
 
-	template.NotBefore, template.NotAfter = pki.NotBeforeAfter(Lifespan)
+	template.NotBefore, template.NotAfter, err = pki.NotBeforeAfter(Lifespan)
+	if err != nil {
+		return
+	}
+
 	template.SerialNumber, err = pki.NewSerial()
 	if err != nil {
 		return
@@ -93,9 +99,12 @@ func Sign(cmd *cobra.Command, args []string) (err error) {
 		return fmt.Errorf("Unable to sign certificate: %w", err)
 	}
 
+	common.Logger.Info("Signed certificate", zap.Stringer("subject", template.Subject), zap.Bool("is_ca", template.IsCA),
+		zap.Stringer("not_before", template.NotBefore), zap.Stringer("not_after", template.NotAfter))
+
 	block := pem.Block{
 		Type:  "CERTIFICATE",
-		Bytes: slot.Certificate.Raw,
+		Bytes: data,
 	}
 
 	if len(CertFile) > 0 {

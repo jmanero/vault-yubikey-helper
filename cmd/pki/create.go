@@ -19,14 +19,11 @@ var (
 	ManagementKey string
 
 	Template = x509.Certificate{
-		BasicConstraintsValid: true,
+		// Minimal attributes for a valid CA certificate
+		IsCA:     true,
+		KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
 
-		KeyUsage: x509.KeyUsageCertSign |
-			x509.KeyUsageCRLSign |
-			x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{
-			x509.ExtKeyUsageOCSPSigning,
-		},
+		BasicConstraintsValid: true,
 	}
 )
 
@@ -36,15 +33,14 @@ func init() {
 		Short: "Generate a self-signed certificate for a Yubikey's signing slot",
 		RunE:  Create,
 
-		Long: `Generate a self-signed certificate for a Yubikey's signing slot with extensions
-not otherwise available in management desktop applications, including setting
-the CA flag.
+		Long: `Generate a self-signed certificate for a Yubikey's signing slot with
+basic-constraint CA:TRUE by default.
 
 The certificate must be saved back to the respective Yubikey's signing slot
 using an external application such as Yubico Authenticator`}
 
 	flags := create.PersistentFlags()
-	flags.BoolVar(&Template.IsCA, "ca", false, "Set the certificate's CA flag")
+	flags.BoolVar(&Template.IsCA, "ca", true, "Set the certificate's CA flag")
 	flags.StringVar(&Template.Subject.CommonName, "cn", "vault-yubikey-helper", "Certificate common-name")
 
 	CLI.AddCommand(&create)
@@ -58,7 +54,11 @@ func Create(cmd *cobra.Command, args []string) (err error) {
 	}
 	defer token.Close()
 
-	Template.NotBefore, Template.NotAfter = pki.NotBeforeAfter(Lifespan)
+	Template.NotBefore, Template.NotAfter, err = pki.NotBeforeAfter(Lifespan)
+	if err != nil {
+		return
+	}
+
 	Template.SerialNumber, err = pki.NewSerial()
 	if err != nil {
 		return
@@ -80,7 +80,7 @@ func Create(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	common.Logger.Info("Signed certificate", zap.Stringer("subject", Template.Subject), zap.Bool("is_ca", Template.IsCA),
-		zap.Time("not_before", Template.NotBefore), zap.Time("not_after", Template.NotAfter))
+		zap.Stringer("not_before", Template.NotBefore), zap.Stringer("not_after", Template.NotAfter))
 
 	block := pem.Block{
 		Type:  "CERTIFICATE",

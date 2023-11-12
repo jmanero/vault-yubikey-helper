@@ -17,11 +17,13 @@ var CLI = cobra.Command{Use: "pki"}
 // CLI flag values
 var (
 	CertFile string
+	Lifespan string
 )
 
 func init() {
 	flags := CLI.PersistentFlags()
 	flags.StringVar(&CertFile, "cert-out", "", "Write certificate to a file instead of STDOUT")
+	flags.StringVar(&Lifespan, "lifespan", "1y", "Lifespan for the signed certificate")
 
 	CLI.AddCommand(&cobra.Command{
 		Use:   "cert",
